@@ -21,16 +21,18 @@ export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }
         ? [{ type: 'text', text: typeof (message as any).content === 'string' ? (message as any).content : JSON.stringify((message as any).content) }]
         : [];
   
-  // Extract text content for thinking detection
-  const hasText = parts.some((p) => p.type === 'text' && p.text && p.text.trim().length > 0);
+  // Extract text and tool presence accurately
+  const hasText = parts.some(
+    (p) => (p.type === 'text' || typeof p.text === 'string') && p.text && p.text.trim().length > 0
+  );
   const hasTools = parts.some(
     (p) =>
-      (typeof p.type === 'string' && (p.type.startsWith('tool-') || p.type === 'dynamic-tool')) ||
-      p.toolCallId ||
-      p.state
+      (typeof p.type === 'string' &&
+        (p.type.startsWith('tool-') || p.type === 'dynamic-tool' || p.type === 'tool-call')) ||
+      Boolean(p.toolCallId)
   );
 
-  // If assistant is generating but no text/tools have arrived yet
+  // If assistant is generating but neither text nor tools have arrived yet
   const isThinking = !isUser && isLatest && !hasText && !hasTools;
 
   return (
@@ -58,9 +60,11 @@ export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }
           <div className="w-full space-y-3">
             <AnimatePresence mode="wait">
               {isThinking ? (
-                <div className="inline-block px-4 py-3 rounded-2xl bg-card border border-border text-card-foreground rounded-tl-sm shadow-sm">
+                <div
+                  key="thinking"
+                  className="inline-block px-4 py-3 rounded-2xl bg-card border border-border text-card-foreground rounded-tl-sm shadow-sm"
+                >
                   <motion.div
-                    key="thinking"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, position: 'absolute' }}
@@ -84,57 +88,70 @@ export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }
                   </motion.div>
                 </div>
               ) : parts.length > 0 ? (
-                parts.map((part, idx) => {
-                  const isToolPart =
-                    (typeof part.type === 'string' &&
-                      (part.type.startsWith('tool-') || part.type === 'dynamic-tool')) ||
-                    part.toolCallId ||
-                    part.state;
+                <div key="content" className="w-full space-y-3">
+                  {parts.map((part, idx) => {
+                    // Check if it's explicitly a text part
+                    const isText =
+                      part.type === 'text' ||
+                      (typeof part.text === 'string' &&
+                        !part.toolCallId &&
+                        !part.type?.startsWith('tool-') &&
+                        part.type !== 'dynamic-tool');
 
-                  if (isToolPart) {
-                    return <ToolPartRenderer key={`${message.id}-tool-${part.toolCallId || idx}`} part={part} />;
-                  }
-
-                  if (part.type === 'text' && part.text) {
-                    return (
-                      <div
-                        key={`${message.id}-text-${idx}`}
-                        className={`inline-block px-4 py-3 rounded-2xl ${
-                          isUser
-                            ? 'bg-primary text-primary-foreground rounded-tr-sm float-right'
-                            : 'bg-card border border-border text-card-foreground rounded-tl-sm shadow-sm'
-                        }`}
-                      >
+                    if (isText) {
+                      if (!part.text || !part.text.trim()) return null;
+                      return (
                         <div
-                          className={`prose prose-sm md:prose-base dark:prose-invert max-w-none break-words ${
+                          key={`${message.id}-text-${idx}`}
+                          className={`inline-block px-4 py-3 rounded-2xl ${
                             isUser
-                              ? 'text-primary-foreground prose-p:text-primary-foreground prose-a:text-primary-foreground/80'
-                              : ''
+                              ? 'bg-primary text-primary-foreground rounded-tr-sm float-right'
+                              : 'bg-card border border-border text-card-foreground rounded-tl-sm shadow-sm'
                           }`}
                         >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                              a: ({ node, ...props }) => (
-                                <a
-                                  {...props}
-                                  className="text-emerald-500 hover:underline"
-                                  target="_blank"
-                                  rel="noreferrer"
-                                />
-                              ),
-                            }}
+                          <div
+                            className={`prose prose-sm md:prose-base dark:prose-invert max-w-none break-words ${
+                              isUser
+                                ? 'text-primary-foreground prose-p:text-primary-foreground prose-a:text-primary-foreground/80'
+                                : ''
+                            }`}
                           >
-                            {part.text}
-                          </ReactMarkdown>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                                a: ({ node, ...props }) => (
+                                  <a
+                                    {...props}
+                                    className="text-emerald-500 hover:underline"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  />
+                                ),
+                              }}
+                            >
+                              {part.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    }
 
-                  return null;
-                })
+                    // Check if it's a tool part
+                    const isToolPart =
+                      (typeof part.type === 'string' &&
+                        (part.type.startsWith('tool-') ||
+                          part.type === 'dynamic-tool' ||
+                          part.type === 'tool-call')) ||
+                      Boolean(part.toolCallId);
+
+                    if (isToolPart) {
+                      return <ToolPartRenderer key={`${message.id}-tool-${part.toolCallId || idx}`} part={part} />;
+                    }
+
+                    return null;
+                  })}
+                </div>
               ) : null}
             </AnimatePresence>
           </div>
