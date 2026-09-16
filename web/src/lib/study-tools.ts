@@ -118,7 +118,8 @@ export const studyTools = {
       const safeTopic = topic || 'Academic Topic';
       const safeSubtopics = Array.isArray(subtopics) && subtopics.length > 0 ? subtopics : ['Fundamentals', 'Applications'];
 
-      // Deterministic but realistic score computation based on topic length + subtopics
+      // TODO [PRODUCTION SHIP]: Replace this simulated heuristic calculation with live dynamic queries
+      // from Supabase tracking the user's actual quiz attempts, active recall accuracy, and SM-2 spaced repetition logs.
       const baseScore = Math.min(
         95,
         Math.max(45, Math.round(55 + (safeHours * 3.2) % 38 + (safeTopic.length * 2) % 15))
