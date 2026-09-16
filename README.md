@@ -5,6 +5,7 @@ Kabisado Copilot is a mobile-first, AI-powered learning engine that transforms u
 ## 🚀 Features
 
 - **RAG Chat Engine**: A conversational interface to query your documents. Features real-time streaming responses and exact page-number citations to trace AI answers back to the source text.
+- **Server-Side AI Tools & Lifecycle UI**: Native tool execution (`evaluateStudyReadiness` & `generateStudyDeck`) with a 4-state lifecycle state machine (`input-streaming`, `input-available`, `output-available`, `output-error`), rendering SVG mastery charts, readiness scorecards, and interactive 3D flashcard decks.
 - **Spaced-Repetition Flashcards**: AI-generated flashcards (strict JSON parsing) presented in a swipeable, Tinder-style deck. It utilizes a spaced-repetition algorithm (like SM-2) to schedule reviews based on your swipe direction (Remembered vs. Forgotten).
 - **Dynamic Quiz Engine**: AI-generated assessments including Multiple Choice and Fill-in-the-Blanks. Features dynamic UI component mounting, real-time grading, and knowledge gap summaries.
 

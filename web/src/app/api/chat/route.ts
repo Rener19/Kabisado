@@ -1,5 +1,6 @@
 import { streamText } from 'ai';
 import { chatModel, systemPrompt } from '@/lib/ai-config';
+import { studyTools } from '@/lib/study-tools';
 
 // Force dynamic execution for API routes that stream
 export const dynamic = 'force-dynamic';
@@ -14,11 +15,12 @@ export async function POST(req: Request) {
       content: msg.parts ? msg.parts.map((p: any) => p.text).join('') : (msg.content || '')
     }));
 
-    // streamText handles the SSE connection and token chunking automatically
+    // streamText handles the SSE connection, tool execution, and token chunking automatically
     const result = await streamText({
       model: chatModel,
       system: systemPrompt,
       messages: coreMessages,
+      tools: studyTools,
       temperature: 0.7,
     });
 
