@@ -49,9 +49,9 @@ const evaluateStudyReadinessSchema = z.object({
   topic: z.string().describe('The primary academic topic or course subject (e.g. Organic Chemistry, Calculus II, Cell Biology)'),
   subtopics: z
     .array(z.string())
-    .min(2)
-    .max(5)
-    .describe('2 to 5 specific subtopics or modules under this subject to analyze'),
+    .min(1)
+    .max(10)
+    .describe('1 to 10 specific subtopics or modules under this subject to analyze'),
   targetExam: z
     .string()
     .optional()
@@ -77,14 +77,26 @@ const generateStudyDeckSchema = z.object({
         term: z.string().describe('The key term, concept name, or core formula'),
         definition: z.string().describe('Crisp and accurate explanation in 1-2 sentences'),
         mnemonic: z.string().optional().describe('A memorable mnemonic hook, acronym, or visual analogy'),
-        practiceQuestion: z.string().describe('A quick test question challenging recall of this concept'),
-        answer: z.string().describe('The direct answer to the practice question'),
-        difficulty: z.enum(['easy', 'medium', 'hard']).describe('Relative concept difficulty level'),
+        practiceQuestion: z
+          .string()
+          .optional()
+          .default('What is the core takeaway or application of this concept?')
+          .describe('A quick test question challenging recall of this concept'),
+        answer: z
+          .string()
+          .optional()
+          .default('Refer to the definition and key points on the card.')
+          .describe('The direct answer to the practice question'),
+        difficulty: z
+          .union([z.enum(['easy', 'medium', 'hard']), z.string()])
+          .optional()
+          .default('medium')
+          .describe('Relative concept difficulty level: easy, medium, or hard'),
       })
     )
-    .min(2)
-    .max(4)
-    .describe('Array of 2 to 4 high-yield study concept cards'),
+    .min(1)
+    .max(15)
+    .describe('Array of 1 to 15 high-yield study concept cards'),
 });
 
 type GenerateStudyDeckInput = z.infer<typeof generateStudyDeckSchema>;
@@ -212,15 +224,21 @@ export const studyTools = {
 
       const safeCards = Array.isArray(conceptCards) ? conceptCards : [];
 
-      const cards: StudyConceptCard[] = safeCards.map((c, i: number) => ({
-        id: `card-${Date.now()}-${i + 1}`,
-        term: c.term,
-        definition: c.definition,
-        mnemonic: c.mnemonic,
-        practiceQuestion: c.practiceQuestion,
-        answer: c.answer,
-        difficulty: c.difficulty,
-      }));
+      const cards: StudyConceptCard[] = safeCards.map((c, i: number) => {
+        const rawDiff = String(c.difficulty || 'medium').toLowerCase();
+        const difficulty: 'easy' | 'medium' | 'hard' =
+          rawDiff === 'easy' || rawDiff === 'hard' ? rawDiff : 'medium';
+
+        return {
+          id: `card-${Date.now()}-${i + 1}`,
+          term: c.term || 'Key Concept',
+          definition: c.definition || 'Key concept explanation.',
+          mnemonic: c.mnemonic,
+          practiceQuestion: c.practiceQuestion || 'How is this concept applied in practice?',
+          answer: c.answer || c.definition || 'Refer to the concept definition.',
+          difficulty,
+        };
+      });
 
       const difficultySummary = {
         easy: cards.filter((c) => c.difficulty === 'easy').length,

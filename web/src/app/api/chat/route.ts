@@ -35,7 +35,9 @@ export async function POST(req: Request) {
       temperature: 0.7,
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      onError: (err) => (err instanceof Error ? err.message : String(err)),
+    });
   } catch (error) {
     console.error('Chat API Error:', error);
     return new Response(JSON.stringify({ error: 'Failed to generate response' }), {
