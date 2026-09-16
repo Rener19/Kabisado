@@ -14,7 +14,12 @@ interface ChatMessageProps {
 export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }: ChatMessageProps) {
   const isUser = message.role === 'user';
   
-  const parts: any[] = (message as any).parts || [];
+  const parts: any[] =
+    Array.isArray((message as any).parts) && (message as any).parts.length > 0
+      ? (message as any).parts
+      : (message as any).content
+        ? [{ type: 'text', text: typeof (message as any).content === 'string' ? (message as any).content : JSON.stringify((message as any).content) }]
+        : [];
   
   // Extract text content for thinking detection
   const hasText = parts.some((p) => p.type === 'text' && p.text && p.text.trim().length > 0);
@@ -87,13 +92,13 @@ export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }
                     part.state;
 
                   if (isToolPart) {
-                    return <ToolPartRenderer key={part.toolCallId || idx} part={part} />;
+                    return <ToolPartRenderer key={`${message.id}-tool-${part.toolCallId || idx}`} part={part} />;
                   }
 
                   if (part.type === 'text' && part.text) {
                     return (
                       <div
-                        key={idx}
+                        key={`${message.id}-text-${idx}`}
                         className={`inline-block px-4 py-3 rounded-2xl ${
                           isUser
                             ? 'bg-primary text-primary-foreground rounded-tr-sm float-right'
