@@ -27,6 +27,10 @@ export function Header() {
             <Link href="#features" className="text-white dark:text-foreground/80 hover:text-white dark:hover:text-foreground transition-colors">Features</Link>
             <Link href="#how-it-works" className="text-white dark:text-foreground/80 hover:text-white dark:hover:text-foreground transition-colors">How it works</Link>
             <Link href="/chat" className="text-white dark:text-foreground/80 hover:text-white dark:hover:text-foreground transition-colors">Try AI Chat</Link>
+            <Link href="/buttons" className="text-emerald-300 hover:text-white transition-colors flex items-center gap-1.5 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Motion Lab
+            </Link>
           </nav>
         </div>
 
@@ -84,6 +88,14 @@ export function Header() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Quizzes
+            </Link>
+            <Link
+              href="/buttons"
+              className="px-4 py-3 text-base font-semibold text-emerald-500 hover:bg-muted rounded-lg font-mono flex items-center gap-2"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Motion Lab
             </Link>
           </nav>
           <div className="flex flex-col gap-2 pt-2 border-t border-border">

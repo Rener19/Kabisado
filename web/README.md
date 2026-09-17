@@ -135,3 +135,24 @@ npm run build
 ```
 
 Open [http://localhost:3000/chat](http://localhost:3000/chat) to interact with the AI Copilot and trigger the tool calling pipeline.
+
+---
+
+## 🔘 Stateful Button Motion System (`/buttons`)
+
+A reusable, accessible button system that communicates its complete lifecycle through intentional motion (`idle` → `hover/focus` → `active` → `loading` → `success` / `error` → `idle`).
+
+- **Interactive Sandbox Demo**: [http://localhost:3000/buttons](http://localhost:3000/buttons)
+- **Component File**: [`src/components/ui/StatefulButton.tsx`](src/components/ui/StatefulButton.tsx)
+
+### Motion Language & Timing Rationale
+
+Every state transition uses purposeful durations mapped to human perception thresholds:
+- **Hover Lift (150ms `ease-out`)**: Immediate acknowledgment of pointer presence without feeling jittery or nervous.
+- **Active Press (100ms `scale(0.97)`)**: Immediate tactile response simulating a mechanical switch depress.
+- **Label Transitions (160ms exit / 220ms enter `cubic-bezier(0.16, 1, 0.3, 1)`)**: Smooth vertical slide (`y: 12 → 0 → -12`) ensuring labels exit swiftly and new status resolves cleanly into focus.
+- **Width Morphing (Spring `stiffness: 420, damping: 30`)**: Natural organic expansion and contraction to adapt to differing label lengths without layout thrash.
+- **Success Hold (1800ms)**: Ample cognitive window for the user's visual cortex to register successful completion before gently easing back to idle.
+- **Error Shake (400ms multi-keyframe `x: [0, -7, 7, -5, 5, -2, 2, 0]`)**: High-frequency dampening tremor communicating refusal. Automatically suppressed under `prefers-reduced-motion` while retaining rose alert coloring.
+- **Compositor Performance**: Exclusively animates `transform` and `opacity` properties to prevent layout recalculations or Cumulative Layout Shift (CLS).
+
