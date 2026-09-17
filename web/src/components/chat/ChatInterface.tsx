@@ -20,6 +20,8 @@ import { DefaultChatTransport } from 'ai';
 import { useSearchParams } from 'next/navigation';
 import { ChatMessage } from './ChatMessage';
 import { ChatSkeleton } from './ChatSkeleton';
+import { ChatInputForm } from './ChatInputForm';
+import { ChatErrorBanner } from './ChatErrorBanner';
 import { useAutoScroll } from '@/hooks/use-auto-scroll';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -211,58 +213,14 @@ export function ChatInterface() {
       </div>
 
       {/* Designed Error & Smart Retry Micro-Interaction Banner */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="px-4 py-3 bg-amber-500/10 dark:bg-amber-950/30 border-t border-amber-500/30 text-amber-950 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs flex-shrink-0"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <div className="min-w-0">
-                <span className="font-semibold text-foreground mr-1.5">Generation Interrupted:</span>
-                <span className="text-muted-foreground truncate inline-block max-w-xs md:max-w-md align-bottom">
-                  {(() => {
-                    if (!error.message) return 'The AI stream encountered a network or server hiccup.';
-                    try {
-                      const parsed = JSON.parse(error.message);
-                      return parsed.error || parsed.message || error.message;
-                    } catch {
-                      return error.message;
-                    }
-                  })()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={handleRetry}
-                disabled={isLoading || isRetrying}
-                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                title={`Retry sending: ${lastPromptSnippet}`}
-              >
-                {isRetrying ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <RotateCcw className="w-3.5 h-3.5" />
-                )}
-                <span>Retry {lastPromptSnippet !== 'last request' ? `"${lastPromptSnippet}"` : ''}</span>
-              </button>
-
-              <button
-                onClick={clearError}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                title="Dismiss error"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ChatErrorBanner
+        error={error}
+        lastPromptSnippet={lastPromptSnippet}
+        isLoading={isLoading}
+        isRetrying={isRetrying}
+        onRetry={handleRetry}
+        onDismiss={clearError}
+      />
 
       {/* Input Area (Mobile Safari Hardened with Safe Area Insets) */}
       <div className="p-3 md:p-4 bg-card border-t border-border relative flex-shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
@@ -281,48 +239,16 @@ export function ChatInterface() {
           )}
         </AnimatePresence>
 
-        <form 
-          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault();
-            const trimmed = input.trim();
-            // Ignore empty or whitespace-only input
-            if (!trimmed || isLoading) return;
+        <ChatInputForm
+          input={input}
+          setInput={setInput}
+          isLoading={isLoading}
+          onStop={stop}
+          onSubmit={(text) => {
             if (error) clearError();
-            
-            sendMessage({ text: trimmed });
-            setInput('');
-          }} 
-          className="flex items-center gap-2 bg-background border border-border rounded-xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/50 transition-shadow"
-        >
-          {/* text-base on mobile prevents iOS Safari from zooming in on input focus */}
-          <input
-            ref={inputRef}
-            className="flex-1 bg-transparent px-4 py-2.5 outline-none text-foreground placeholder:text-muted-foreground text-base md:text-sm min-w-0"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question or evaluate study readiness..."
-          />
-          
-          {isLoading ? (
-            <button
-              type="button"
-              onClick={stop}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors flex-shrink-0 cursor-pointer"
-              aria-label="Stop generation"
-            >
-              <Square size={16} className="fill-current" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0 cursor-pointer"
-              aria-label="Send message"
-            >
-              <Send size={16} />
-            </button>
-          )}
-        </form>
+            sendMessage({ text });
+          }}
+        />
       </div>
     </div>
   );

@@ -21,8 +21,9 @@ export function InteractiveStudyDeck({ data }: InteractiveStudyDeckProps) {
   const masteredCount = Object.values(masteredCards).filter(Boolean).length;
   const progressPercent = Math.round((masteredCount / totalCards) * 100);
 
-  const toggleMastery = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleMastery = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!currentCard?.id) return;
     setMasteredCards((prev) => ({
       ...prev,
       [currentCard.id]: !prev[currentCard.id],
@@ -126,8 +127,17 @@ export function InteractiveStudyDeck({ data }: InteractiveStudyDeckProps) {
             >
               {/* Card Container with Ultra-Fast 3D Flip */}
               <div 
+                role="button"
+                tabIndex={0}
+                aria-label={`Flashcard ${currentIndex + 1} of ${totalCards}: ${isFlipped ? 'click to flip back' : 'click to flip and reveal answer'}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsFlipped(!isFlipped);
+                  }
+                }}
                 onClick={() => setIsFlipped(!isFlipped)}
-                className="relative min-h-[250px] w-full rounded-xl cursor-pointer select-none perspective-1000 transition-transform active:scale-[0.99]"
+                className="relative min-h-[250px] w-full rounded-xl cursor-pointer select-none perspective-1000 transition-transform active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {!isFlipped ? (
@@ -231,7 +241,10 @@ export function InteractiveStudyDeck({ data }: InteractiveStudyDeckProps) {
                       {/* Footer with Mastered Toggle */}
                       <div className="flex items-center justify-between pt-3 border-t border-emerald-600/50">
                         <button
-                          onClick={toggleMastery}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMastery();
+                          }}
                           className={`text-xs px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-sm ${
                             isMastered
                               ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
