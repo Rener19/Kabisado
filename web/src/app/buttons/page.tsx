@@ -31,37 +31,58 @@ export default function StatefulButtonsDemoPage() {
     setEventLog((prev) => [{ id: Math.random().toString(), time, event: msg }, ...prev.slice(0, 7)]);
   };
 
-  // Simulated Async Calls
-  const handleSimulatedCall = (shouldFail = false) => {
-    return new Promise<void>((resolve, reject) => {
-      logEvent(`Async dispatch triggered (Expect: ${shouldFail ? 'FAILURE' : 'SUCCESS'})...`);
-      setTimeout(() => {
-        if (shouldFail) {
-          logEvent('Async response: 500 Network Exception');
-          reject(new Error('Simulated network error'));
-        } else {
-          logEvent('Async response: 200 OK');
-          resolve();
-        }
-      }, 1000 / speedMultiplier);
-    });
+  // Orchestrate lifecycle transitions safely without uncaught promise rejections
+  const triggerLifecycle = (targetOutcome: 'success' | 'error' | 'random') => {
+    setManualState('loading');
+    logEvent(`Sandbox trigger fired → transitioning to [loading] (Target: ${targetOutcome.toUpperCase()})`);
+
+    const delay = 900 / speedMultiplier;
+
+    setTimeout(() => {
+      let resolvedState: ButtonLifecycleState = 'success';
+      if (targetOutcome === 'error') {
+        resolvedState = 'error';
+        logEvent('Operation failed (simulated 500 error) → button entered [error] state with shake');
+      } else if (targetOutcome === 'success') {
+        resolvedState = 'success';
+        logEvent('Operation succeeded (200 OK) → button entered [success] state with checkmark');
+      } else {
+        const didFail = Math.random() < 0.2;
+        resolvedState = didFail ? 'error' : 'success';
+        logEvent(
+          didFail
+            ? 'Random action failed (20% rate) → button entered [error] state'
+            : 'Random action succeeded → button entered [success] state'
+        );
+      }
+
+      setManualState(resolvedState);
+
+      // If it resolved to success, return to idle after 1800ms hold
+      if (resolvedState === 'success') {
+        setTimeout(() => {
+          setManualState((prev) => (prev === 'success' ? 'idle' : prev));
+          logEvent('Success hold ended → state machine returned to [idle]');
+        }, 1800 / speedMultiplier);
+      }
+    }, delay);
   };
 
-  const handleRandomCall = () => {
-    return new Promise<void>((resolve, reject) => {
-      const delay = Math.floor(Math.random() * 700 + 800) / speedMultiplier;
-      const willFail = Math.random() < 0.2; // 20% failure rate
-      logEvent(`Random call initiated (~${Math.round(delay)}ms, 20% fail rate)...`);
-      setTimeout(() => {
-        if (willFail) {
-          logEvent('Random call: REJECTED (Simulated 20% failure rate hit)');
-          reject(new Error('Random failure'));
-        } else {
-          logEvent('Random call: RESOLVED (200 Success)');
-          resolve();
-        }
-      }, delay);
-    });
+  // Handler for direct clicks on the buttons
+  const handleDirectClick = async () => {
+    setManualState(null);
+    logEvent('Direct button click received → processing request');
+    const delay = Math.floor(Math.random() * 400 + 700) / speedMultiplier;
+    const willFail = Math.random() < 0.2; // 20% failure rate
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    if (willFail) {
+      logEvent('Direct action failed (20% threshold reached) → button entering [error] state');
+      throw new Error('Simulated request timeout');
+    } else {
+      logEvent('Direct action resolved successfully → button entering [success] state');
+    }
   };
 
   return (
@@ -127,7 +148,7 @@ export default function StatefulButtonsDemoPage() {
                 disabled={isDisabled}
                 speedMultiplier={speedMultiplier}
                 forceReducedMotion={forceReducedMotion}
-                onClick={handleRandomCall}
+                onClick={handleDirectClick}
                 className="w-56"
               />
             </div>
@@ -146,7 +167,7 @@ export default function StatefulButtonsDemoPage() {
                 disabled={isDisabled}
                 speedMultiplier={speedMultiplier}
                 forceReducedMotion={forceReducedMotion}
-                onClick={handleRandomCall}
+                onClick={handleDirectClick}
                 className="w-52"
               />
             </div>
@@ -161,10 +182,7 @@ export default function StatefulButtonsDemoPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <button
-                onClick={() => {
-                  setManualState(null);
-                  handleSimulatedCall(false);
-                }}
+                onClick={() => triggerLifecycle('success')}
                 className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -172,10 +190,7 @@ export default function StatefulButtonsDemoPage() {
               </button>
 
               <button
-                onClick={() => {
-                  setManualState(null);
-                  handleSimulatedCall(true);
-                }}
+                onClick={() => triggerLifecycle('error')}
                 className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -183,10 +198,7 @@ export default function StatefulButtonsDemoPage() {
               </button>
 
               <button
-                onClick={() => {
-                  setManualState(null);
-                  handleRandomCall();
-                }}
+                onClick={() => triggerLifecycle('random')}
                 className="p-3 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <Zap className="w-3.5 h-3.5" />
@@ -194,7 +206,10 @@ export default function StatefulButtonsDemoPage() {
               </button>
 
               <button
-                onClick={() => setManualState(null)}
+                onClick={() => {
+                  setManualState('idle');
+                  logEvent('Manual reset triggered → state set to [idle]');
+                }}
                 className="p-3 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />

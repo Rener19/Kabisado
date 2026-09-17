@@ -114,7 +114,7 @@ export function StatefulButton({
         setInternalState('success');
       }
     } catch (err) {
-      console.error('StatefulButton action failed:', err);
+      console.warn('StatefulButton handled lifecycle error:', (err as Error)?.message || err);
       setInternalState('error');
     }
   };
