@@ -40,4 +40,31 @@ Built entirely on $0-deployment-cost free-tier services.
 Instructions for setting up the local development environment for both the FastAPI backend and Expo frontend will be added as the project progresses.
 
 ---
+
+## 🔘 Deliverable: Stateful Action Button Motion System
+
+A reusable, compositor-friendly button motion system built with Framer Motion that communicates its complete lifecycle through intentional physics transitions (`idle` → `hover/focus` → `active` → `loading` → `success` / `error` → `idle`).
+
+- **Live Sandbox URL**: [http://localhost:3000/buttons](http://localhost:3000/buttons)
+- **Component File**: [`web/src/components/ui/StatefulButton.tsx`](web/src/components/ui/StatefulButton.tsx)
+- **Interactive Sandbox Page**: [`web/src/app/buttons/page.tsx`](web/src/app/buttons/page.tsx)
+
+### Motion Language & Timing Rationale
+
+Every state transition uses purposeful durations mapped to human perception thresholds:
+- **Hover Lift (150ms `ease-out`)**: Rapid acknowledgment of pointer presence without feeling jittery or nervous.
+- **Active Press (100ms `scale(0.97)`)**: Immediate tactile response simulating a mechanical switch depression.
+- **Label Transitions (160ms exit / 220ms enter `cubic-bezier(0.16, 1, 0.3, 1)`)**: Smooth vertical slide (`y: 12 → 0 → -12`) ensuring labels exit swiftly and new status resolves cleanly into focus.
+- **Width Morphing (Spring `stiffness: 420, damping: 30`)**: Natural organic expansion and contraction to adapt to differing label lengths without layout thrash.
+- **Success Hold (1800ms)**: Ample cognitive window for the user's visual cortex to register successful completion before gently easing back to idle.
+- **Error Shake (400ms multi-keyframe `x: [0, -7, 7, -5, 5, -2, 2, 0]`)**: High-frequency dampening tremor communicating refusal. Automatically suppressed under `prefers-reduced-motion` while retaining rose alert coloring.
+- **Compositor Performance**: Exclusively animates `transform` and `opacity` properties to prevent layout recalculations or Cumulative Layout Shift (CLS).
+
+### System Coherence (Two Coherent Buttons)
+To demonstrate that this is a systematic design language rather than a one-off decorative button, the sandbox showcases two distinct actions sharing the exact same motion tokens:
+1. **Hero AI Action ("Generate Study Set")**: Emerald gradient with `Sparkles` icon for generating flashcard decks and study notes.
+2. **Secondary Cloud Action ("Save to Library")**: Neutral card styling with `Bookmark` icon for saving items to the student's study library.
+
+---
 *Developed for a computer science capstone project. Designed to prove high engineering rigor and scalable AI integrations.*
+
