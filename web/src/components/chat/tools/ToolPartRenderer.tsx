@@ -2,12 +2,24 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, AlertCircle, Wrench, Sparkles, Terminal, RefreshCw, Cpu } from 'lucide-react';
+import { Loader2, AlertCircle, Wrench, Terminal, RefreshCw, Cpu } from 'lucide-react';
 import { StudyReadinessScorecard } from './StudyReadinessScorecard';
 import { InteractiveStudyDeck } from './InteractiveStudyDeck';
+import type { StudyReadinessResult, StudyDeckResult } from '@/lib/study-tools';
+
+export interface ToolPart {
+  type?: string;
+  toolName?: string;
+  toolCallId?: string;
+  state?: 'input-streaming' | 'input-available' | 'output-available' | 'output-error' | string;
+  input?: Record<string, unknown>;
+  output?: unknown;
+  errorText?: string;
+  error?: string;
+}
 
 export interface ToolPartRendererProps {
-  part: any;
+  part: ToolPart;
 }
 
 export function ToolPartRenderer({ part }: ToolPartRendererProps) {
@@ -21,9 +33,9 @@ export function ToolPartRenderer({ part }: ToolPartRendererProps) {
   const state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error' | string =
     part.state || 'output-available';
 
-  const input = part.input || {};
+  const input = (part.input || {}) as Record<string, unknown>;
   const output = part.output;
-  const errorText = part.errorText || (part as any).error;
+  const errorText = part.errorText || part.error;
 
   const friendlyToolTitle = (name: string) => {
     switch (name) {
@@ -127,22 +139,22 @@ export function ToolPartRenderer({ part }: ToolPartRendererProps) {
               Executing with parameters:
             </span>
             <div className="flex flex-wrap gap-2 text-xs">
-              {input.topic && (
+              {Boolean(input.topic) && (
                 <span className="px-2 py-1 rounded-md bg-muted border border-border">
-                  📚 <strong>Topic:</strong> {input.topic}
+                  📚 <strong>Topic:</strong> {String(input.topic)}
                 </span>
               )}
-              {input.subject && (
+              {Boolean(input.subject) && (
                 <span className="px-2 py-1 rounded-md bg-muted border border-border">
-                  📖 <strong>Subject:</strong> {input.subject}
+                  📖 <strong>Subject:</strong> {String(input.subject)}
                 </span>
               )}
-              {input.targetExam && (
+              {Boolean(input.targetExam) && (
                 <span className="px-2 py-1 rounded-md bg-muted border border-border">
-                  🎯 <strong>Exam:</strong> {input.targetExam}
+                  🎯 <strong>Exam:</strong> {String(input.targetExam)}
                 </span>
               )}
-              {input.subtopics && Array.isArray(input.subtopics) && (
+              {Array.isArray(input.subtopics) && (
                 <span className="px-2 py-1 rounded-md bg-muted border border-border">
                   🧩 <strong>Subtopics:</strong> {input.subtopics.length} items
                 </span>
@@ -213,9 +225,9 @@ export function ToolPartRenderer({ part }: ToolPartRendererProps) {
         className="w-full"
       >
         {toolName === 'evaluateStudyReadiness' ? (
-          <StudyReadinessScorecard data={output} />
+          <StudyReadinessScorecard data={output as StudyReadinessResult} />
         ) : toolName === 'generateStudyDeck' ? (
-          <InteractiveStudyDeck data={output} />
+          <InteractiveStudyDeck data={output as StudyDeckResult} />
         ) : (
           /* Fallback generic tool component if model calls an unexpected tool */
           <div className="w-full my-3 p-4 rounded-xl border border-border bg-card text-card-foreground shadow-sm">

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Award, CheckCircle2, AlertTriangle, Clock, Target, Sparkles, TrendingUp } from 'lucide-react';
+import { Award, CheckCircle2, Clock, Target, Sparkles, TrendingUp } from 'lucide-react';
 import type { StudyReadinessResult } from '@/lib/study-tools';
 
 interface StudyReadinessScorecardProps {

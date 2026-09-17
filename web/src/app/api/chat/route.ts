@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText, convertToModelMessages, UIMessage } from 'ai';
 import { chatModel, systemPrompt } from '@/lib/ai-config';
 import { studyTools } from '@/lib/study-tools';
 
@@ -41,15 +41,17 @@ export async function POST(req: Request) {
       });
     }
 
-    const { messages } = await req.json();
+    const { messages } = (await req.json()) as { messages?: UIMessage[] };
 
     // Normalize messages so any legacy format with content strings is compatible with UIMessage parts
-    const normalizedMessages = (messages || []).map((msg: any) => {
-      if ((!msg.parts || msg.parts.length === 0) && msg.content) {
+    const normalizedMessages: UIMessage[] = (messages || []).map((msg) => {
+      const parts = msg.parts;
+      if ((!parts || parts.length === 0) && (msg as { content?: unknown }).content) {
+        const raw = (msg as { content?: unknown }).content;
         return {
           ...msg,
-          parts: [{ type: 'text', text: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) }],
-        };
+          parts: [{ type: 'text', text: typeof raw === 'string' ? raw : JSON.stringify(raw) }],
+        } as UIMessage;
       }
       return msg;
     });

@@ -24,7 +24,7 @@ export default async function HealthPage() {
         <ul className="mt-4 space-y-2 text-sm text-secondary">
           <li><strong>Timestamp:</strong> {timestamp}</li>
           <li><strong>API Status:</strong> Connected</li>
-          <li><strong>Mock Data Received:</strong> "{data.title}"</li>
+          <li><strong>Mock Data Received:</strong> &ldquo;{data.title}&rdquo;</li>
         </ul>
       </div>
     </div>

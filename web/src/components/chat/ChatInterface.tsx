@@ -47,10 +47,15 @@ const STARTER_PROMPTS = [
 ];
 
 export function ChatInterface() {
-  const [mounted, setMounted] = useState(false);
+  const isMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const [input, setInput] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasLoadedHistory = useRef(false);
   
   const searchParams = useSearchParams();
   const sabotage = searchParams?.get('sabotage');
@@ -68,29 +73,31 @@ export function ChatInterface() {
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
   const lastPromptSnippet = (() => {
     if (!lastUserMessage) return 'last request';
-    const textPart = (lastUserMessage as any).parts?.find((p: any) => p.type === 'text');
-    const raw = textPart?.text || (lastUserMessage as any).content || 'last request';
+    const msgData = lastUserMessage as { parts?: Array<{ type?: string; text?: string }>; content?: string };
+    const textPart = msgData.parts?.find((p) => p.type === 'text');
+    const raw = textPart?.text || msgData.content || 'last request';
     return raw.length > 30 ? `${raw.slice(0, 30)}...` : raw;
   })();
 
-  // Handle Hydration mismatch for localStorage
+  // Restore chat history on initial mount
   useEffect(() => {
-    setMounted(true);
+    if (hasLoadedHistory.current) return;
+    hasLoadedHistory.current = true;
     const saved = localStorage.getItem('kabisado_chat_history');
     if (saved) {
       try {
         setMessages(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse history');
+      } catch {
+        // Ignore corrupted storage
       }
     }
   }, [setMessages]);
 
   useEffect(() => {
-    if (mounted && messages.length > 0) {
+    if (isMounted && messages.length > 0) {
       localStorage.setItem('kabisado_chat_history', JSON.stringify(messages));
     }
-  }, [messages, mounted]);
+  }, [messages, isMounted]);
 
   // Handle Retry Micro-Interaction with Debounce
   const handleRetry = async () => {
@@ -101,8 +108,8 @@ export function ChatInterface() {
     try {
       if (typeof regenerate === 'function') {
         await regenerate();
-      } else if (lastUserMessage) {
-        await sendMessage(lastUserMessage as any);
+      } else if (lastPromptSnippet && lastPromptSnippet !== 'last request') {
+        await sendMessage({ text: lastPromptSnippet });
       }
     } catch (e) {
       console.error('Retry failed:', e);
@@ -116,7 +123,7 @@ export function ChatInterface() {
     inputRef.current?.focus();
   };
 
-  if (!mounted) {
+  if (!isMounted) {
     return <div className="h-[80vh] w-full max-w-4xl mx-auto border border-border rounded-2xl bg-card animate-pulse" />;
   }
 
@@ -275,19 +282,14 @@ export function ChatInterface() {
         </AnimatePresence>
 
         <form 
-          onSubmit={(e) => {
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             const trimmed = input.trim();
             // Ignore empty or whitespace-only input
             if (!trimmed || isLoading) return;
             if (error) clearError();
             
-            const userMsg = { 
-              id: Date.now().toString(), 
-              role: 'user' as const, 
-              parts: [{ type: 'text' as const, text: trimmed }] 
-            };
-            sendMessage(userMsg as any);
+            sendMessage({ text: trimmed });
             setInput('');
           }} 
           className="flex items-center gap-2 bg-background border border-border rounded-xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/50 transition-shadow"

@@ -4,7 +4,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Sparkles } from 'lucide-react';
-import { ToolPartRenderer } from './tools/ToolPartRenderer';
+import { ToolPartRenderer, type ToolPart } from './tools/ToolPartRenderer';
+
+interface MessageTextPart {
+  type?: 'text' | string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+type ChatPart = MessageTextPart & ToolPart;
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -14,11 +22,12 @@ interface ChatMessageProps {
 export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }: ChatMessageProps) {
   const isUser = message.role === 'user';
   
-  const parts: any[] =
-    Array.isArray((message as any).parts) && (message as any).parts.length > 0
-      ? (message as any).parts
-      : (message as any).content
-        ? [{ type: 'text', text: typeof (message as any).content === 'string' ? (message as any).content : JSON.stringify((message as any).content) }]
+  const rawMessage = message as { parts?: ChatPart[]; content?: unknown };
+  const parts: ChatPart[] =
+    Array.isArray(rawMessage.parts) && rawMessage.parts.length > 0
+      ? rawMessage.parts
+      : rawMessage.content
+        ? [{ type: 'text', text: typeof rawMessage.content === 'string' ? rawMessage.content : JSON.stringify(rawMessage.content) }]
         : [];
   
   // Extract text and tool presence accurately
@@ -120,13 +129,16 @@ export const ChatMessage = React.memo(function ChatMessage({ message, isLatest }
                               remarkPlugins={[remarkGfm]}
                               components={{
                                 p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                                a: ({ node, ...props }) => (
+                                a: ({ href, children, ...props }) => (
                                   <a
+                                    href={href}
                                     {...props}
                                     className="text-emerald-500 hover:underline"
                                     target="_blank"
                                     rel="noreferrer"
-                                  />
+                                  >
+                                    {children}
+                                  </a>
                                 ),
                               }}
                             >
